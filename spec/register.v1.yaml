@@ -1,0 +1,249 @@
+openapi: 3.0.3
+
+info:
+  title: forge register document schemas
+  version: 1.0.0
+  description: >-
+    The documents a register stores and the records that move it. The get, put
+    and list transport lives in forge-revision-spec; the register is new record
+    kinds carried over that transport, so a state engine that passes the
+    revision conformance suite carries register records unchanged.
+
+components:
+  schemas:
+    Spec:
+      type: object
+      additionalProperties: true
+      description: >-
+        Engine specific configuration. The core model fixes the shape of the
+        register documents. Each engine keeps this block for its own internals,
+        so register-state-git takes a path and a DynamoDB engine takes a table
+        and a region, and nothing in the core model knows about either.
+
+    SeverityVector:
+      type: object
+      description: >-
+        Counts of known, unfixed vulnerabilities affecting one version, by
+        severity. Vectors compare lexicographically from critical down, so a
+        critical never trades against any number of lows. A vulnerability with
+        unknown severity counts as high.
+      required: [critical, high, medium, low]
+      properties:
+        critical:
+          type: integer
+          minimum: 0
+        high:
+          type: integer
+          minimum: 0
+        medium:
+          type: integer
+          minimum: 0
+        low:
+          type: integer
+          minimum: 0
+
+    VersionEntry:
+      type: object
+      description: One adopted version in a track's history.
+      required: [version, releasedAt, adoptedAt, vulns]
+      properties:
+        version:
+          type: string
+          minLength: 1
+        releasedAt:
+          type: string
+          format: date-time
+          description: When upstream published the version.
+        adoptedAt:
+          type: string
+          format: date-time
+          description: When the register adopted it.
+        vulns:
+          $ref: '#/components/schemas/SeverityVector'
+        source:
+          type: string
+          description: >-
+            Where the artifact comes from. Registry coordinates for an external
+            package, a git URL for an internal one.
+        provenance:
+          type: string
+          description: >-
+            The revision id that proved an internal package, minted by the
+            pipeline that released it. Absent for external packages, which
+            enter by policy rather than proof.
+        osvSnapshot:
+          type: string
+          description: >-
+            Digest of the vulnerability snapshot behind the adopting verdict,
+            so the decision replays and explains itself.
+
+    Advisory:
+      type: object
+      description: >-
+        The current version carries a vulnerability and no fixed version
+        exists upstream yet. An advisory pierces every pin - a consumer that
+        resolved an advised version fails loud, hard-pinned or not.
+      required: [vulnIds, severity, since]
+      properties:
+        vulnIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+          description: The highest severity among the vulnerabilities named.
+        since:
+          type: string
+          format: date-time
+
+    Deprecation:
+      type: object
+      description: >-
+        Set by register policy, never by hand. A track deprecates when its
+        advisory has no fix past the deprecation window, or when upstream
+        stopped releasing into it while a successor exists.
+      required: [reason, since]
+      properties:
+        reason:
+          type: string
+          enum: [no-fix, stale]
+        since:
+          type: string
+          format: date-time
+
+    Track:
+      type: object
+      description: >-
+        A maintained line of one package, named by a semver prefix. One current
+        version per track. A version belongs to its longest matching track
+        prefix. One index file per track, and this is that file's shape.
+      required: [package, ecosystem, prefix, current, updatedAt]
+      properties:
+        package:
+          type: string
+          minLength: 1
+          description: The package URL, go-import style.
+        ecosystem:
+          type: string
+          enum: [go, rust, python, typescript, internal]
+        prefix:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]+)*$'
+          description: '"1" for a major track, "1.27" for a maintained line.'
+        current:
+          type: string
+          minLength: 1
+        updatedAt:
+          type: string
+          format: date-time
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersionEntry'
+          description: Adopted versions, oldest first. current is the last.
+        advisory:
+          $ref: '#/components/schemas/Advisory'
+        deprecated:
+          $ref: '#/components/schemas/Deprecation'
+
+    Request:
+      type: object
+      description: >-
+        The only door into the register. A request is untrusted input; it
+        moves the register only by passing the same policy as everything else,
+        whoever files it. An open-track request derives from a consumer
+        factory declaration, never from a CLI.
+      required: [type, package, ecosystem, reason, createdAt]
+      properties:
+        type:
+          type: string
+          enum: [admission, upgrade, open-track]
+        package:
+          type: string
+          minLength: 1
+        ecosystem:
+          type: string
+          enum: [go, rust, python, typescript, internal]
+        track:
+          type: string
+          pattern: '^[0-9]+(\.[0-9]+)*$'
+          description: Required for open-track, optional otherwise.
+        version:
+          type: string
+          description: >-
+            An exact version, when the requester wants one. Absent, the
+            admission algorithm chooses and never substitutes silently.
+        requester:
+          type: string
+          description: Who filed it. A consumer name, or a person.
+        reason:
+          type: string
+          minLength: 1
+          description: Mandatory. A request with no reason is a config error.
+        createdAt:
+          type: string
+          format: date-time
+
+    Alternative:
+      type: object
+      description: A version a denial offers instead, with its vector.
+      required: [version, vulns]
+      properties:
+        version:
+          type: string
+          minLength: 1
+        releasedAt:
+          type: string
+          format: date-time
+        vulns:
+          $ref: '#/components/schemas/SeverityVector'
+
+    Verdict:
+      type: object
+      description: >-
+        Every decision the register takes, written with its inputs. Not
+        upgrading is never silent, and a rejection is structured so a person
+        or an agent can correct the next request from the verdict alone.
+      required: [code, package, decidedAt]
+      properties:
+        code:
+          type: string
+          enum:
+            - adopted
+            - held-worse-vector
+            - held-canary-red
+            - pending-admission
+            - denied-over-floor
+            - denied-quarantined
+            - denied-not-a-maintained-line
+            - denied-security-regression
+            - denied-over-budget
+        package:
+          type: string
+          minLength: 1
+        ecosystem:
+          type: string
+          enum: [go, rust, python, typescript, internal]
+        track:
+          type: string
+        requested:
+          type: string
+          description: The exact version the request named, when it named one.
+        adopted:
+          type: string
+          description: The version an adoption settled on.
+        alternatives:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alternative'
+          description: What a denial offers instead.
+        osvSnapshot:
+          type: string
+        message:
+          type: string
+          description: The human half. A denial must carry one.
+        decidedAt:
+          type: string
+          format: date-time

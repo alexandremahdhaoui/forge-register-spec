@@ -1,0 +1,6 @@
+package: registertypes
+output: pkg/registertypes/zz_generated.types.go
+generate:
+  models: true
+output-options:
+  skip-prune: true

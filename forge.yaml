@@ -1,0 +1,37 @@
+name: forge-register-spec
+
+artifactStorePath: .forge/artifact-store.yaml
+
+build:
+  # The Go types come from the schema, never from a keyboard. Two tools read
+  # this contract and a hand written struct on either side is a second source.
+  - name: generate-types
+    src: .
+    engine: go://generic-builder
+    spec:
+      command: oapi-codegen
+      args: ["-config", "hack/oapi-types.yaml", "spec/register.v1.yaml"]
+
+  - name: format-code
+    src: .
+    engine: go://go-format
+
+test:
+  - name: lint
+    runner: go://go-lint
+
+  - name: generated
+    runner: go://generic-test-runner
+    spec:
+      command: sh
+      args: ["hack/generated-check.sh"]
+
+  - name: vectors
+    runner: go://generic-test-runner
+    spec:
+      command: sh
+      args: ["hack/validate.sh"]
+
+factory:
+  module: github.com/alexandremahdhaoui/forge-register-spec
+  goVersion: "1.26.5"
