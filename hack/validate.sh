@@ -96,6 +96,9 @@ def semantic_errors(schema_name, doc):
         if code.startswith("denied-") and not doc.get("message"):
             out.append("a denial carries no message")
 
+        if code.startswith("held-") and not doc.get("message"):
+            out.append("a hold carries no message")
+
         if code == "adopted" and not doc.get("adopted"):
             out.append("an adoption names no version")
 

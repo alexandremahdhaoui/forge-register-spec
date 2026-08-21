@@ -132,9 +132,12 @@ const (
 	DeniedOverFloor          VerdictCode = "denied-over-floor"
 	DeniedQuarantined        VerdictCode = "denied-quarantined"
 	DeniedSecurityRegression VerdictCode = "denied-security-regression"
+	DeniedUnknownVersion     VerdictCode = "denied-unknown-version"
 	HeldCanaryRed            VerdictCode = "held-canary-red"
+	HeldQuarantined          VerdictCode = "held-quarantined"
 	HeldWorseVector          VerdictCode = "held-worse-vector"
 	PendingAdmission         VerdictCode = "pending-admission"
+	UpToDate                 VerdictCode = "up-to-date"
 )
 
 // Valid indicates whether the value is a known member of the VerdictCode enum.
@@ -152,11 +155,17 @@ func (e VerdictCode) Valid() bool {
 		return true
 	case DeniedSecurityRegression:
 		return true
+	case DeniedUnknownVersion:
+		return true
 	case HeldCanaryRed:
+		return true
+	case HeldQuarantined:
 		return true
 	case HeldWorseVector:
 		return true
 	case PendingAdmission:
+		return true
+	case UpToDate:
 		return true
 	default:
 		return false

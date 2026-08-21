@@ -212,11 +212,14 @@ components:
           type: string
           enum:
             - adopted
+            - up-to-date
             - held-worse-vector
+            - held-quarantined
             - held-canary-red
             - pending-admission
             - denied-over-floor
             - denied-quarantined
+            - denied-unknown-version
             - denied-not-a-maintained-line
             - denied-security-regression
             - denied-over-budget
