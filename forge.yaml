@@ -35,3 +35,4 @@ test:
 factory:
   module: github.com/alexandremahdhaoui/forge-register-spec
   goVersion: "1.26.5"
+  manifest: committed
