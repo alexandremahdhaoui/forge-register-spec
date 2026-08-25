@@ -318,9 +318,9 @@
     }
    },
    {
-    "case": "quiet-since-must-be-a-date",
+    "case": "quiet-since-must-be-a-string-date",
     "schema": "Track",
-    "why": "quietSince is a date-time set by policy; free text would make the mark unreadable.",
+    "why": "quietSince is a date-time string set by policy; a bare number is not a mark anyone can read.",
     "error": "quietSince",
     "doc": {
      "package": "github.com/x/quiet",
@@ -328,7 +328,7 @@
      "prefix": "2",
      "current": "2.4.0",
      "updatedAt": "2026-08-20T10:00:00Z",
-     "quietSince": "a while ago"
+     "quietSince": 1787598849
     }
    }
   ],
