@@ -282,8 +282,11 @@ type Track struct {
 	Package string `json:"package"`
 
 	// Prefix "1" for a major track, "1.27" for a maintained line.
-	Prefix    string    `json:"prefix"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Prefix string `json:"prefix"`
+
+	// QuietSince Set by register policy, never by hand: upstream's last release into this track, once the track has been quiet past the stale window with no successor line to deprecate toward. The track stays current - silence with nowhere to go is a fact worth naming, not a retirement - and the mark clears the moment upstream releases again or a successor appears.
+	QuietSince *time.Time `json:"quietSince,omitempty"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
 }
 
 // TrackEcosystem defines model for Track.Ecosystem.

@@ -196,6 +196,19 @@
      "message": "upstream has no 9.9.9; newest is 2.4.1",
      "decidedAt": "2026-08-21T10:00:00Z"
     }
+   },
+   {
+    "case": "quiet-track-with-no-successor",
+    "schema": "Track",
+    "why": "quietSince names a track whose upstream went silent with no successor line. Policy sets it to the last release date; the track stays current.",
+    "doc": {
+     "package": "github.com/x/quiet",
+     "ecosystem": "go",
+     "prefix": "2",
+     "current": "2.4.0",
+     "updatedAt": "2026-08-20T10:00:00Z",
+     "quietSince": "2025-11-01T00:00:00Z"
+    }
    }
   ],
   "invalid": [
@@ -302,6 +315,20 @@
     "doc": {
      "reason": "we felt like it",
      "since": "2026-08-20T10:00:00Z"
+    }
+   },
+   {
+    "case": "quiet-since-must-be-a-date",
+    "schema": "Track",
+    "why": "quietSince is a date-time set by policy; free text would make the mark unreadable.",
+    "error": "quietSince",
+    "doc": {
+     "package": "github.com/x/quiet",
+     "ecosystem": "go",
+     "prefix": "2",
+     "current": "2.4.0",
+     "updatedAt": "2026-08-20T10:00:00Z",
+     "quietSince": "a while ago"
     }
    }
   ],

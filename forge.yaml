@@ -7,27 +7,27 @@ build:
   # this contract and a hand written struct on either side is a second source.
   - name: generate-types
     src: .
-    engine: go://generic-builder
+    engine: forge://generic-builder
     spec:
       command: oapi-codegen
       args: ["-config", "hack/oapi-types.yaml", "spec/register.v1.yaml"]
 
   - name: format-code
     src: .
-    engine: go://go-format
+    engine: forge://go-format
 
 test:
   - name: lint
-    runner: go://go-lint
+    runner: forge://go-lint
 
   - name: generated
-    runner: go://generic-test-runner
+    runner: forge://generic-test-runner
     spec:
       command: sh
       args: ["hack/generated-check.sh"]
 
   - name: vectors
-    runner: go://generic-test-runner
+    runner: forge://generic-test-runner
     spec:
       command: sh
       args: ["hack/validate.sh"]

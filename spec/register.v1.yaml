@@ -147,6 +147,16 @@ components:
           $ref: '#/components/schemas/Advisory'
         deprecated:
           $ref: '#/components/schemas/Deprecation'
+        quietSince:
+          type: string
+          format: date-time
+          description: >-
+            Set by register policy, never by hand: upstream's last release
+            into this track, once the track has been quiet past the stale
+            window with no successor line to deprecate toward. The track
+            stays current - silence with nowhere to go is a fact worth
+            naming, not a retirement - and the mark clears the moment
+            upstream releases again or a successor appears.
 
     Request:
       type: object
