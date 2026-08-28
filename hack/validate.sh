@@ -58,6 +58,13 @@ for case in cases["schema"]["invalid"]:
 
 
 def in_prefix(version, prefix):
+    # Ecosystems disagree about the leading v and the register keeps whatever
+    # upstream published, so "v0.55.0" belongs to track "0". The Go side has
+    # always trimmed it; this validator did not, which made every real Go
+    # track file fail a rule the implementation accepts.
+    version = version[1:] if version[:1] == "v" else version
+    prefix = prefix[1:] if prefix[:1] == "v" else prefix
+
     return version == prefix or version.startswith(prefix + ".")
 
 
@@ -76,15 +83,22 @@ def semantic_errors(schema_name, doc):
         if prefix and current and not in_prefix(current, prefix):
             out.append("current does not belong to the track prefix")
 
-        history = doc.get("history") or []
+        outcome = doc.get("outcome", "")
+        vulns = doc.get("vulns") or {}
+        counted = sum(int(vulns.get(k, 0)) for k in ("critical", "high", "medium", "low"))
 
-        if history:
-            adopted = [e.get("adoptedAt", "") for e in history]
+        # The whole reason outcome exists is that a zero vector meant four
+        # different things. So the two must agree, in both directions.
+        if outcome == "findings" and counted == 0:
+            out.append("outcome findings carries no vulnerabilities")
 
-            if adopted != sorted(adopted):
-                out.append("history is not in adoption order")
-            elif history[-1].get("version") != current:
-                out.append("current is not the last adopted entry")
+        if outcome == "clean" and counted > 0:
+            out.append("outcome clean carries vulnerabilities")
+
+        # not-found and unreachable are the outcomes a person has to act on.
+        # Each has to say, in words, why nothing was measured.
+        if outcome in ("not-found", "unreachable") and not doc.get("reason"):
+            out.append("outcome %s carries no reason" % outcome)
 
     if schema_name == "Request":
         if doc.get("type") == "open-track" and not doc.get("track"):

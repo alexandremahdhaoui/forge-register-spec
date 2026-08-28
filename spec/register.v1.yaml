@@ -42,40 +42,24 @@ components:
           type: integer
           minimum: 0
 
-    VersionEntry:
-      type: object
-      description: One adopted version in a track's history.
-      required: [version, releasedAt, adoptedAt, vulns]
-      properties:
-        version:
-          type: string
-          minLength: 1
-        releasedAt:
-          type: string
-          format: date-time
-          description: When upstream published the version.
-        adoptedAt:
-          type: string
-          format: date-time
-          description: When the register adopted it.
-        vulns:
-          $ref: '#/components/schemas/SeverityVector'
-        source:
-          type: string
-          description: >-
-            Where the artifact comes from. Registry coordinates for an external
-            package, a git URL for an internal one.
-        provenance:
-          type: string
-          description: >-
-            The revision id that proved an internal package, minted by the
-            pipeline that released it. Absent for external packages, which
-            enter by policy rather than proof.
-        osvSnapshot:
-          type: string
-          description: >-
-            Digest of the vulnerability snapshot behind the adopting verdict,
-            so the decision replays and explains itself.
+    Outcome:
+      type: string
+      enum: [findings, clean, not-found, unreachable]
+      description: >-
+        What actually happened when the vulnerability feed was asked. It exists
+        because three different situations all answer HTTP 200 with the body
+        "{}": a package with no vulnerabilities, a package the feed has never
+        heard of, and a request the feed could not read. Recording only a count
+        of zero turned all three into the claim "this is clean".
+
+
+        findings - a published range covers this version.
+
+        clean - the feed answered and no range covers this version.
+
+        not-found - the feed carries no record for this package at all.
+
+        unreachable - the request failed, so nothing was measured.
 
     Advisory:
       type: object
@@ -119,7 +103,15 @@ components:
         A maintained line of one package, named by a semver prefix. One current
         version per track. A version belongs to its longest matching track
         prefix. One index file per track, and this is that file's shape.
-      required: [package, ecosystem, prefix, current, updatedAt]
+
+
+        The file carries current state only. The register lives in a git
+        repository, so git already records every version this file ever held
+        along with the commit that caused each change; a history array inside
+        the file restated what `git log -p` gives for free, and drifted from
+        it. Unknown keys are refused so one cannot creep back in.
+      required: [package, ecosystem, prefix, current, updatedAt, vulns, outcome]
+      additionalProperties: false
       properties:
         package:
           type: string
@@ -138,11 +130,44 @@ components:
         updatedAt:
           type: string
           format: date-time
-        history:
-          type: array
-          items:
-            $ref: '#/components/schemas/VersionEntry'
-          description: Adopted versions, oldest first. current is the last.
+        releasedAt:
+          type: string
+          format: date-time
+          description: When upstream published the current version.
+        adoptedAt:
+          type: string
+          format: date-time
+          description: When the register adopted the current version.
+        vulns:
+          $ref: '#/components/schemas/SeverityVector'
+        outcome:
+          $ref: '#/components/schemas/Outcome'
+        reason:
+          type: string
+          description: >-
+            Why the vector says what it says, in words, for a person reading
+            this file later. A zero vector means nothing on its own: the feed
+            answered and found nothing, or the feed does not carry this
+            package, or the feed could not be reached. This sentence is what
+            tells those apart at a glance.
+        source:
+          type: string
+          description: >-
+            Where the artifact comes from. Registry coordinates for an external
+            package, a git URL for an internal one.
+        provenance:
+          type: string
+          description: >-
+            The revision id that proved an internal package, minted by the
+            pipeline that released it. Absent for external packages, which
+            enter by policy rather than proof.
+        osvSnapshot:
+          type: string
+          description: >-
+            Digest of the vulnerability snapshot behind the adopting verdict,
+            so the decision replays and explains itself. The digest of an
+            empty snapshot is the sha256 of nothing, which is why outcome is
+            recorded beside it rather than inferred from it.
         advisory:
           $ref: '#/components/schemas/Advisory'
         deprecated:

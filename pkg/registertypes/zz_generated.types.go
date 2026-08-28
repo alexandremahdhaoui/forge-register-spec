@@ -49,6 +49,30 @@ func (e DeprecationReason) Valid() bool {
 	}
 }
 
+// Defines values for Outcome.
+const (
+	Clean       Outcome = "clean"
+	Findings    Outcome = "findings"
+	NotFound    Outcome = "not-found"
+	Unreachable Outcome = "unreachable"
+)
+
+// Valid indicates whether the value is a known member of the Outcome enum.
+func (e Outcome) Valid() bool {
+	switch e {
+	case Clean:
+		return true
+	case Findings:
+		return true
+	case NotFound:
+		return true
+	case Unreachable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RequestEcosystem.
 const (
 	RequestEcosystemGo         RequestEcosystem = "go"
@@ -228,6 +252,14 @@ type Deprecation struct {
 // DeprecationReason defines model for Deprecation.Reason.
 type DeprecationReason string
 
+// Outcome What actually happened when the vulnerability feed was asked. It exists because three different situations all answer HTTP 200 with the body "{}": a package with no vulnerabilities, a package the feed has never heard of, and a request the feed could not read. Recording only a count of zero turned all three into the claim "this is clean".
+//
+// findings - a published range covers this version.
+// clean - the feed answered and no range covers this version.
+// not-found - the feed carries no record for this package at all.
+// unreachable - the request failed, so nothing was measured.
+type Outcome string
+
 // Request The only door into the register. A request is untrusted input; it moves the register only by passing the same policy as everything else, whoever files it. An open-track request derives from a consumer factory declaration, never from a CLI.
 type Request struct {
 	CreatedAt time.Time        `json:"createdAt"`
@@ -266,7 +298,12 @@ type SeverityVector struct {
 type Spec map[string]interface{}
 
 // Track A maintained line of one package, named by a semver prefix. One current version per track. A version belongs to its longest matching track prefix. One index file per track, and this is that file's shape.
+//
+// The file carries current state only. The register lives in a git repository, so git already records every version this file ever held along with the commit that caused each change; a history array inside the file restated what `git log -p` gives for free, and drifted from it. Unknown keys are refused so one cannot creep back in.
 type Track struct {
+	// AdoptedAt When the register adopted the current version.
+	AdoptedAt *time.Time `json:"adoptedAt,omitempty"`
+
 	// Advisory The current version carries a vulnerability and no fixed version exists upstream yet. An advisory pierces every pin - a consumer that resolved an advised version fails loud, hard-pinned or not.
 	Advisory *Advisory `json:"advisory,omitempty"`
 	Current  string    `json:"current"`
@@ -275,8 +312,16 @@ type Track struct {
 	Deprecated *Deprecation   `json:"deprecated,omitempty"`
 	Ecosystem  TrackEcosystem `json:"ecosystem"`
 
-	// History Adopted versions, oldest first. current is the last.
-	History *[]VersionEntry `json:"history,omitempty"`
+	// OsvSnapshot Digest of the vulnerability snapshot behind the adopting verdict, so the decision replays and explains itself. The digest of an empty snapshot is the sha256 of nothing, which is why outcome is recorded beside it rather than inferred from it.
+	OsvSnapshot *string `json:"osvSnapshot,omitempty"`
+
+	// Outcome What actually happened when the vulnerability feed was asked. It exists because three different situations all answer HTTP 200 with the body "{}": a package with no vulnerabilities, a package the feed has never heard of, and a request the feed could not read. Recording only a count of zero turned all three into the claim "this is clean".
+	//
+	// findings - a published range covers this version.
+	// clean - the feed answered and no range covers this version.
+	// not-found - the feed carries no record for this package at all.
+	// unreachable - the request failed, so nothing was measured.
+	Outcome Outcome `json:"outcome"`
 
 	// Package The package URL, go-import style.
 	Package string `json:"package"`
@@ -284,9 +329,24 @@ type Track struct {
 	// Prefix "1" for a major track, "1.27" for a maintained line.
 	Prefix string `json:"prefix"`
 
+	// Provenance The revision id that proved an internal package, minted by the pipeline that released it. Absent for external packages, which enter by policy rather than proof.
+	Provenance *string `json:"provenance,omitempty"`
+
 	// QuietSince Set by register policy, never by hand: upstream's last release into this track, once the track has been quiet past the stale window with no successor line to deprecate toward. The track stays current - silence with nowhere to go is a fact worth naming, not a retirement - and the mark clears the moment upstream releases again or a successor appears.
 	QuietSince *time.Time `json:"quietSince,omitempty"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
+
+	// Reason Why the vector says what it says, in words, for a person reading this file later. A zero vector means nothing on its own: the feed answered and found nothing, or the feed does not carry this package, or the feed could not be reached. This sentence is what tells those apart at a glance.
+	Reason *string `json:"reason,omitempty"`
+
+	// ReleasedAt When upstream published the current version.
+	ReleasedAt *time.Time `json:"releasedAt,omitempty"`
+
+	// Source Where the artifact comes from. Registry coordinates for an external package, a git URL for an internal one.
+	Source    *string   `json:"source,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	// Vulns Counts of known, unfixed vulnerabilities affecting one version, by severity. Vectors compare lexicographically from critical down, so a critical never trades against any number of lows. A vulnerability with unknown severity counts as high.
+	Vulns SeverityVector `json:"vulns"`
 }
 
 // TrackEcosystem defines model for Track.Ecosystem.
@@ -318,25 +378,3 @@ type VerdictCode string
 
 // VerdictEcosystem defines model for Verdict.Ecosystem.
 type VerdictEcosystem string
-
-// VersionEntry One adopted version in a track's history.
-type VersionEntry struct {
-	// AdoptedAt When the register adopted it.
-	AdoptedAt time.Time `json:"adoptedAt"`
-
-	// OsvSnapshot Digest of the vulnerability snapshot behind the adopting verdict, so the decision replays and explains itself.
-	OsvSnapshot *string `json:"osvSnapshot,omitempty"`
-
-	// Provenance The revision id that proved an internal package, minted by the pipeline that released it. Absent for external packages, which enter by policy rather than proof.
-	Provenance *string `json:"provenance,omitempty"`
-
-	// ReleasedAt When upstream published the version.
-	ReleasedAt time.Time `json:"releasedAt"`
-
-	// Source Where the artifact comes from. Registry coordinates for an external package, a git URL for an internal one.
-	Source  *string `json:"source,omitempty"`
-	Version string  `json:"version"`
-
-	// Vulns Counts of known, unfixed vulnerabilities affecting one version, by severity. Vectors compare lexicographically from critical down, so a critical never trades against any number of lows. A vulnerability with unknown severity counts as high.
-	Vulns SeverityVector `json:"vulns"`
-}
