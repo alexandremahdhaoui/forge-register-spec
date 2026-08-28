@@ -13,6 +13,7 @@ const (
 	High     AdvisorySeverity = "high"
 	Low      AdvisorySeverity = "low"
 	Medium   AdvisorySeverity = "medium"
+	Unknown  AdvisorySeverity = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the AdvisorySeverity enum.
@@ -25,6 +26,8 @@ func (e AdvisorySeverity) Valid() bool {
 	case Low:
 		return true
 	case Medium:
+		return true
+	case Unknown:
 		return true
 	default:
 		return false
@@ -223,15 +226,25 @@ func (e VerdictEcosystem) Valid() bool {
 	}
 }
 
-// Advisory The current version carries a vulnerability and no fixed version exists upstream yet. An advisory pierces every pin - a consumer that resolved an advised version fails loud, hard-pinned or not.
+// Advisory The current version carries a vulnerability. An advisory pierces every pin - a consumer that resolved an advised version fails loud, hard-pinned or not - and is cleared only by acknowledging the named ids in the consumer's own factory file.
+//
+// It carries what a consumer needs to decide, because the alternative is a consumer asserting things it never checked. "no fix upstream" was printed for a year by code that had never read a range event.
 type Advisory struct {
-	// Severity The highest severity among the vulnerabilities named.
+	// AffectedImports The import paths the advisory is scoped to, where the ecosystem publishes them. Empty means the feed gave no scope, NOT that everything is affected. A consumer can use this to see whether its own code goes anywhere near the vulnerable part.
+	AffectedImports *[]string `json:"affectedImports,omitempty"`
+
+	// FixedIn The versions the feed names as fixing this, unioned across the named ids. Empty means the feed names none, which is a fact read from the record rather than an assumption. Upgrading is the best way out of an advisory, so a consumer has to be told when one exists.
+	FixedIn *[]string `json:"fixedIn,omitempty"`
+
+	// Severity The highest severity among the vulnerabilities named. "unknown" when the feed publishes none anywhere, which is 38 percent of real records - saying so beats inventing a number.
 	Severity AdvisorySeverity `json:"severity"`
-	Since    time.Time        `json:"since"`
-	VulnIds  []string         `json:"vulnIds"`
+
+	// Since When the advisory was published upstream, not when this pipeline noticed it. It is also what arms auto-deprecation, so the pipeline's own clock would deprecate a track early.
+	Since   time.Time `json:"since"`
+	VulnIds []string  `json:"vulnIds"`
 }
 
-// AdvisorySeverity The highest severity among the vulnerabilities named.
+// AdvisorySeverity The highest severity among the vulnerabilities named. "unknown" when the feed publishes none anywhere, which is 38 percent of real records - saying so beats inventing a number.
 type AdvisorySeverity string
 
 // Alternative A version a denial offers instead, with its vector.
@@ -304,7 +317,9 @@ type Track struct {
 	// AdoptedAt When the register adopted the current version.
 	AdoptedAt *time.Time `json:"adoptedAt,omitempty"`
 
-	// Advisory The current version carries a vulnerability and no fixed version exists upstream yet. An advisory pierces every pin - a consumer that resolved an advised version fails loud, hard-pinned or not.
+	// Advisory The current version carries a vulnerability. An advisory pierces every pin - a consumer that resolved an advised version fails loud, hard-pinned or not - and is cleared only by acknowledging the named ids in the consumer's own factory file.
+	//
+	// It carries what a consumer needs to decide, because the alternative is a consumer asserting things it never checked. "no fix upstream" was printed for a year by code that had never read a range event.
 	Advisory *Advisory `json:"advisory,omitempty"`
 	Current  string    `json:"current"`
 

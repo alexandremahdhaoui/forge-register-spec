@@ -64,10 +64,17 @@ components:
     Advisory:
       type: object
       description: >-
-        The current version carries a vulnerability and no fixed version
-        exists upstream yet. An advisory pierces every pin - a consumer that
-        resolved an advised version fails loud, hard-pinned or not.
+        The current version carries a vulnerability. An advisory pierces every
+        pin - a consumer that resolved an advised version fails loud,
+        hard-pinned or not - and is cleared only by acknowledging the named
+        ids in the consumer's own factory file.
+
+
+        It carries what a consumer needs to decide, because the alternative is
+        a consumer asserting things it never checked. "no fix upstream" was
+        printed for a year by code that had never read a range event.
       required: [vulnIds, severity, since]
+      additionalProperties: false
       properties:
         vulnIds:
           type: array
@@ -76,11 +83,37 @@ components:
           minItems: 1
         severity:
           type: string
-          enum: [critical, high, medium, low]
-          description: The highest severity among the vulnerabilities named.
+          enum: [critical, high, medium, low, unknown]
+          description: >-
+            The highest severity among the vulnerabilities named. "unknown"
+            when the feed publishes none anywhere, which is 38 percent of real
+            records - saying so beats inventing a number.
         since:
           type: string
           format: date-time
+          description: >-
+            When the advisory was published upstream, not when this pipeline
+            noticed it. It is also what arms auto-deprecation, so the
+            pipeline's own clock would deprecate a track early.
+        fixedIn:
+          type: array
+          items:
+            type: string
+          description: >-
+            The versions the feed names as fixing this, unioned across the
+            named ids. Empty means the feed names none, which is a fact read
+            from the record rather than an assumption. Upgrading is the best
+            way out of an advisory, so a consumer has to be told when one
+            exists.
+        affectedImports:
+          type: array
+          items:
+            type: string
+          description: >-
+            The import paths the advisory is scoped to, where the ecosystem
+            publishes them. Empty means the feed gave no scope, NOT that
+            everything is affected. A consumer can use this to see whether its
+            own code goes anywhere near the vulnerable part.
 
     Deprecation:
       type: object

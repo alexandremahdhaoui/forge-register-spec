@@ -181,7 +181,7 @@
    {
     "case": "track-with-an-advisory-on-its-current-version",
     "schema": "Track",
-    "why": "a track whose current carries a finding with no fix upstream records the advisory and the outcome that produced it",
+    "why": "a track whose current carries a finding records what a consumer needs to decide: the ids, an empty fixedIn because the feed names no fix, and the import scope that says which code is actually in reach",
     "doc": {
      "package": "golang.org/x/crypto",
      "ecosystem": "go",
@@ -203,8 +203,14 @@
       "vulnIds": [
        "GO-2026-5932"
       ],
-      "severity": "high",
-      "since": "2026-08-11T00:00:00Z"
+      "severity": "unknown",
+      "since": "2026-08-11T00:00:00Z",
+      "fixedIn": [],
+      "affectedImports": [
+       "golang.org/x/crypto/openpgp",
+       "golang.org/x/crypto/openpgp/armor",
+       "golang.org/x/crypto/openpgp/packet"
+      ]
      }
     }
    },
@@ -273,6 +279,39 @@
      "outcome": "unreachable",
      "reason": "the vulnerability feed could not be reached: posting https://api.osv.dev/v1/querybatch: status 503",
      "osvSnapshot": "sha256:e3b0c44298fc1c14"
+    }
+   },
+   {
+    "case": "advisory-naming-the-version-that-fixes-it",
+    "schema": "Track",
+    "why": "upgrading is the best way out of an advisory, so when the feed names a fixed version the consumer has to be told which one",
+    "doc": {
+     "package": "golang.org/x/net",
+     "ecosystem": "go",
+     "prefix": "0",
+     "current": "v0.17.0",
+     "updatedAt": "2026-08-28T10:00:00Z",
+     "vulns": {
+      "critical": 0,
+      "high": 1,
+      "medium": 0,
+      "low": 0
+     },
+     "outcome": "findings",
+     "reason": "1 published range(s) cover v0.17.0",
+     "advisory": {
+      "vulnIds": [
+       "GHSA-4374-p667-p6c8"
+      ],
+      "severity": "high",
+      "since": "2023-12-06T00:00:00Z",
+      "fixedIn": [
+       "0.17.0"
+      ],
+      "affectedImports": [
+       "golang.org/x/net/http2"
+      ]
+     }
     }
    }
   ],
@@ -487,6 +526,20 @@
        }
       }
      ]
+    }
+   },
+   {
+    "case": "advisory-with-an-unknown-key",
+    "schema": "Advisory",
+    "error": "additional",
+    "why": "an advisory is what a consumer acts on. A key nobody reads is a fact nobody checked.",
+    "doc": {
+     "vulnIds": [
+      "GO-1"
+     ],
+     "severity": "high",
+     "since": "2026-01-01T00:00:00Z",
+     "reachable": true
     }
    }
   ],
