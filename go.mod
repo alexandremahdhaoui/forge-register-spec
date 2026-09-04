@@ -3,3 +3,14 @@
 module github.com/alexandremahdhaoui/forge-register-spec
 
 go 1.26.5
+
+require (
+	github.com/alexandremahdhaoui/forge v0.45.49
+	github.com/google/go-containerregistry v0.22.0
+	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/oapi-codegen/runtime v1.7.0
+	github.com/spf13/cobra v1.10.2
+	github.com/stretchr/testify v1.12.1
+	golang.org/x/crypto v0.56.0
+	sigs.k8s.io/yaml v1.6.0
+)
