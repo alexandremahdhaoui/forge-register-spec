@@ -1,26 +1,4 @@
 {
- "_comment": [
-  "Conformance vectors for the register document schemas.",
-  "",
-  "schema.valid must pass the schema. schema.invalid must fail it.",
-  "",
-  "schema.semantic is the third kind and the important one. Each must PASS the",
-  "schema and fail only in the validator. A schema cannot express a rule that",
-  "spans two fields, so trying to make it do so grows a rule it should not have.",
-  "hack/validate.sh asserts both halves, which is what stops that.",
-  "",
-  "A track carries no history. The register lives in a git repository, so git",
-  "already records every version a track file ever held together with the commit",
-  "that caused each change. A history array restated that, and drifted from it.",
-  "",
-  "outcome is the field that stops a zero vector from meaning four things at",
-  "once. The feed answers HTTP 200 with the body {} for a clean package, for a",
-  "package it has never heard of, and for a request it could not read.",
-  "",
-  "The get, put and list transport is owned by forge-revision-spec and its",
-  "vectors live there. Register records are new kinds over that transport, so",
-  "there is nothing transport shaped to assert here."
- ],
  "schema": {
   "valid": [
    {
@@ -155,6 +133,41 @@
      "ecosystem": "go",
      "requested": "9.9.9",
      "message": "upstream has no 9.9.9; newest is 2.4.1",
+     "decidedAt": "2026-08-21T10:00:00Z"
+    }
+   },
+   {
+    "case": "denial-of-an-ambiguous-version",
+    "schema": "Verdict",
+    "why": "an exact request that matches two equal versions and spells neither one is refused by name, and every equal version comes back with its vector so the requester can pick one",
+    "doc": {
+     "code": "denied-ambiguous-version",
+     "package": "example.com/pkg",
+     "ecosystem": "go",
+     "requested": "v1.2",
+     "alternatives": [
+      {
+       "version": "1.2",
+       "releasedAt": "2026-05-14T00:00:00Z",
+       "vulns": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+       }
+      },
+      {
+       "version": "1.2.0",
+       "releasedAt": "2026-05-15T00:00:00Z",
+       "vulns": {
+        "critical": 1,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+       }
+      }
+     ],
+     "message": "v1.2 matches 1.2 and 1.2.0 and spells neither. Request one of them by its exact name.",
      "decidedAt": "2026-08-21T10:00:00Z"
     }
    },

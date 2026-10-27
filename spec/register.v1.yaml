@@ -286,6 +286,7 @@ components:
             - held-canary-red
             - pending-admission
             - denied-over-floor
+            - denied-ambiguous-version
             - denied-quarantined
             - denied-unknown-version
             - denied-not-a-maintained-line

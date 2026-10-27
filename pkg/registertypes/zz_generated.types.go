@@ -154,6 +154,7 @@ func (e TrackEcosystem) Valid() bool {
 // Defines values for VerdictCode.
 const (
 	Adopted                  VerdictCode = "adopted"
+	DeniedAmbiguousVersion   VerdictCode = "denied-ambiguous-version"
 	DeniedNotAMaintainedLine VerdictCode = "denied-not-a-maintained-line"
 	DeniedOverBudget         VerdictCode = "denied-over-budget"
 	DeniedOverFloor          VerdictCode = "denied-over-floor"
@@ -171,6 +172,8 @@ const (
 func (e VerdictCode) Valid() bool {
 	switch e {
 	case Adopted:
+		return true
+	case DeniedAmbiguousVersion:
 		return true
 	case DeniedNotAMaintainedLine:
 		return true
