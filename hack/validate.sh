@@ -58,10 +58,6 @@ for case in cases["schema"]["invalid"]:
 
 
 def in_prefix(version, prefix):
-    # Ecosystems disagree about the leading v and the register keeps whatever
-    # upstream published, so "v0.55.0" belongs to track "0". The Go side has
-    # always trimmed it; this validator did not, which made every real Go
-    # track file fail a rule the implementation accepts.
     version = version[1:] if version[:1] == "v" else version
     prefix = prefix[1:] if prefix[:1] == "v" else prefix
 
@@ -69,11 +65,6 @@ def in_prefix(version, prefix):
 
 
 def semantic_errors(schema_name, doc):
-    """Rules a schema cannot express, because each one spans two fields.
-
-    Encoding these in the schema is how a schema grows a rule it should not
-    have, so they live here and the vectors assert they fail here only.
-    """
     out = []
 
     if schema_name == "Track":
@@ -87,16 +78,12 @@ def semantic_errors(schema_name, doc):
         vulns = doc.get("vulns") or {}
         counted = sum(int(vulns.get(k, 0)) for k in ("critical", "high", "medium", "low"))
 
-        # The whole reason outcome exists is that a zero vector meant four
-        # different things. So the two must agree, in both directions.
         if outcome == "findings" and counted == 0:
             out.append("outcome findings carries no vulnerabilities")
 
         if outcome == "clean" and counted > 0:
             out.append("outcome clean carries vulnerabilities")
 
-        # not-found and unreachable are the outcomes a person has to act on.
-        # Each has to say, in words, why nothing was measured.
         if outcome in ("not-found", "unreachable") and not doc.get("reason"):
             out.append("outcome %s carries no reason" % outcome)
 
@@ -116,10 +103,15 @@ def semantic_errors(schema_name, doc):
         if code == "adopted" and not doc.get("adopted"):
             out.append("an adoption names no version")
 
+        if code == "denied-ambiguous-version" and len(doc.get("alternatives") or []) < 2:
+            out.append("an ambiguous version denial lists fewer than two alternatives")
+
+        if code == "denied-ambiguous-version" and not doc.get("requested"):
+            out.append("an ambiguous version denial names no requested version")
+
     return out
 
 
-# Both halves. A semantic vector must pass the schema, and must fail here.
 for case in cases["schema"].get("semantic", []):
     errs = errors_for(case["schema"], case["doc"])
 
@@ -133,7 +125,6 @@ for case in cases["schema"].get("semantic", []):
         failures.append("schema/semantic/%s must fail the validator with %r, got %r"
                         % (case["case"], case["error"], reasons))
 
-# A vector that is meant to be valid must be clean on both halves too.
 for case in cases["schema"]["valid"]:
     reasons = semantic_errors(case["schema"], case["doc"])
 

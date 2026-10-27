@@ -139,11 +139,11 @@
    {
     "case": "denial-of-an-ambiguous-version",
     "schema": "Verdict",
-    "why": "an exact request that matches two equal versions and spells neither one is refused by name, and every equal version comes back with its vector so the requester can pick one",
+    "why": "an exact request that matches two or more equal versions and spells none of them is refused by name, and every equal version comes back with its vector so the requester can pick one",
     "doc": {
      "code": "denied-ambiguous-version",
-     "package": "example.com/pkg",
-     "ecosystem": "go",
+     "package": "example-pkg",
+     "ecosystem": "python",
      "requested": "v1.2",
      "alternatives": [
       {
@@ -602,6 +602,67 @@
      "ecosystem": "go",
      "track": "1.27",
      "decidedAt": "2026-08-20T10:00:00Z"
+    }
+   },
+   {
+    "case": "ambiguous-version-denial-with-one-alternative",
+    "schema": "Verdict",
+    "why": "an ambiguous request matched two or more equal versions, so a denial that lists one hides the others and the requester cannot pick",
+    "error": "an ambiguous version denial lists fewer than two alternatives",
+    "doc": {
+     "code": "denied-ambiguous-version",
+     "package": "example-pkg",
+     "ecosystem": "python",
+     "requested": "v1.2",
+     "alternatives": [
+      {
+       "version": "1.2.0",
+       "releasedAt": "2026-05-15T00:00:00Z",
+       "vulns": {
+        "critical": 1,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+       }
+      }
+     ],
+     "message": "v1.2 matches 1.2.0 and spells it differently. Request it by its exact name.",
+     "decidedAt": "2026-08-21T10:00:00Z"
+    }
+   },
+   {
+    "case": "ambiguous-version-denial-naming-no-requested-version",
+    "schema": "Verdict",
+    "why": "the ambiguous version code exists only for an exact request, so a denial that names no requested version cannot say which string was ambiguous",
+    "error": "an ambiguous version denial names no requested version",
+    "doc": {
+     "code": "denied-ambiguous-version",
+     "package": "example-pkg",
+     "ecosystem": "python",
+     "alternatives": [
+      {
+       "version": "1.2",
+       "releasedAt": "2026-05-14T00:00:00Z",
+       "vulns": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+       }
+      },
+      {
+       "version": "1.2.0",
+       "releasedAt": "2026-05-15T00:00:00Z",
+       "vulns": {
+        "critical": 1,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+       }
+      }
+     ],
+     "message": "the request matches 1.2 and 1.2.0 and spells neither. Request one of them by its exact name.",
+     "decidedAt": "2026-08-21T10:00:00Z"
     }
    },
    {
